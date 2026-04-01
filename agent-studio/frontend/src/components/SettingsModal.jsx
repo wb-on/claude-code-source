@@ -1,22 +1,16 @@
 import { Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { fetchJson } from '../lib/http';
 
 const emptyForm = { id: '', name: '', baseUrl: '', apiKey: '', modelCatalog: '' };
 
 export default function SettingsModal({ open, onClose, selectedProviderId, onSelectProvider }) {
   const [providers, setProviders] = useState([]);
   const [form, setForm] = useState(emptyForm);
-  const [error, setError] = useState('');
 
   async function refresh() {
-    try {
-      const data = await fetchJson('/api/providers');
-      setProviders(data.providers || []);
-      setError('');
-    } catch (e) {
-      setError(e.message);
-    }
+    const res = await fetch('/api/providers');
+    const data = await res.json();
+    setProviders(data.providers || []);
   }
 
   useEffect(() => {
@@ -24,36 +18,28 @@ export default function SettingsModal({ open, onClose, selectedProviderId, onSel
   }, [open]);
 
   async function saveProvider() {
-    try {
-      const payload = {
-        id: form.id.trim(),
-        name: form.name.trim(),
-        baseUrl: form.baseUrl.trim(),
-        apiKey: form.apiKey.trim(),
-        modelCatalog: form.modelCatalog
-          .split(',')
-          .map(v => v.trim())
-          .filter(Boolean),
-      };
-      await fetchJson('/api/providers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      setForm(emptyForm);
-      await refresh();
-    } catch (e) {
-      setError(e.message);
-    }
+    const payload = {
+      id: form.id.trim(),
+      name: form.name.trim(),
+      baseUrl: form.baseUrl.trim(),
+      apiKey: form.apiKey.trim(),
+      modelCatalog: form.modelCatalog
+        .split(',')
+        .map(v => v.trim())
+        .filter(Boolean),
+    };
+    await fetch('/api/providers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    setForm(emptyForm);
+    await refresh();
   }
 
   async function deleteProvider(id) {
-    try {
-      await fetchJson(`/api/providers/${encodeURIComponent(id)}`, { method: 'DELETE' });
-      await refresh();
-    } catch (e) {
-      setError(e.message);
-    }
+    await fetch(`/api/providers/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    await refresh();
   }
 
   if (!open) return null;
@@ -65,8 +51,6 @@ export default function SettingsModal({ open, onClose, selectedProviderId, onSel
           <h3 className="text-lg font-semibold text-slate-100">Provider 设置</h3>
           <button className="btn-ghost" onClick={onClose}><X size={16} /></button>
         </div>
-
-        {!!error && <div className="mb-3 rounded-lg border border-rose-700/50 bg-rose-950/40 px-3 py-2 text-sm text-rose-200">{error}</div>}
 
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           <input className="input" placeholder="ID (deepseek)" value={form.id} onChange={e => setForm(s => ({ ...s, id: e.target.value }))} />
