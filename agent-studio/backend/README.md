@@ -21,3 +21,9 @@ npm run dev
 - `POST /api/providers`
 - `DELETE /api/providers/:id`
 - `POST /api/chat/stream` (SSE)
+
+
+## 兼容与排查
+- 后端启动时会自动创建配置文件：`~/.agent_config.json`
+- 如果前端与后端不在同域，可在前端设置 `VITE_API_BASE_URL`，例如：`http://127.0.0.1:8787`
+- 浏览器无法直接读取本机绝对路径，前端会提示你手动输入工作目录，再由后端读取目录树
