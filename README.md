@@ -57,3 +57,40 @@ node custom-webui/server.mjs --port=3760
 ```
 
 Then open `http://127.0.0.1:3760`.
+
+
+
+## Agent Studio (Step 1 Architecture)
+
+A new architecture-first plan for a full local coding agent (Client-Server) is added at:
+
+- `agent-studio/docs/ARCHITECTURE.md`
+
+This step defines:
+- tech stack selection,
+- monorepo directory structure,
+- API contracts,
+- tool-calling schema for local coding tools.
+
+
+## Agent Studio Backend (Step 2)
+
+```bash
+cd agent-studio/backend
+npm install
+npm run dev
+```
+
+SSE chat endpoint:
+- `POST /api/chat/stream`
+
+
+## Agent Studio Frontend (Step 3)
+
+```bash
+cd agent-studio/frontend
+npm install
+npm run dev
+```
+
+Open `http://127.0.0.1:5174`.
