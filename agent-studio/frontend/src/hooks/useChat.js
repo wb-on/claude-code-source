@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react';
-import { apiUrl } from '../lib/http';
 
 function parseSseChunk(chunk) {
   return chunk
@@ -36,26 +35,20 @@ export function useChat() {
     setToolEvents([]);
     setIsLoading(true);
 
-    const response = await fetch(apiUrl('/api/chat/stream'), {
+    const response = await fetch('/api/chat/stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ providerId, model, workspaceRoot, messages: nextMessages }),
+      body: JSON.stringify({
+        providerId,
+        model,
+        workspaceRoot,
+        messages: nextMessages,
+      }),
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      let message = text;
-      try {
-        const json = JSON.parse(text);
-        message = json.hint ? `${json.error}（${json.hint}）` : json.error || text;
-      } catch {}
+    if (!response.ok || !response.body) {
       setIsLoading(false);
-      throw new Error(message || 'SSE 请求失败');
-    }
-
-    if (!response.body) {
-      setIsLoading(false);
-      throw new Error('后端未返回 SSE body');
+      throw new Error('SSE 请求失败');
     }
 
     const reader = response.body.getReader();
@@ -67,6 +60,7 @@ export function useChat() {
       const { done, value } = await reader.read();
       if (done) break;
       buffer += decoder.decode(value, { stream: true });
+
       const splitIndex = buffer.lastIndexOf('\n\n');
       if (splitIndex === -1) continue;
 
@@ -80,17 +74,28 @@ export function useChat() {
           setMessages(prev => {
             const copy = [...prev];
             const last = copy[copy.length - 1];
-            if (last?.role === 'assistant') copy[copy.length - 1] = { ...last, content: currentAssistant };
-            else copy.push({ role: 'assistant', content: currentAssistant });
+            if (last?.role === 'assistant') {
+              copy[copy.length - 1] = { ...last, content: currentAssistant };
+            } else {
+              copy.push({ role: 'assistant', content: currentAssistant });
+            }
             return copy;
           });
         }
-        if (evt.event === 'tool_call' || evt.event === 'tool_result' || evt.event === 'error') {
+
+        if (evt.event === 'tool_call' || evt.event === 'tool_result') {
           setToolEvents(prev => [...prev, evt]);
         }
-        if (evt.event === 'done' && !currentAssistant && evt.data?.text) {
-          currentAssistant = evt.data.text;
-          setMessages(prev => [...prev, { role: 'assistant', content: currentAssistant }]);
+
+        if (evt.event === 'done') {
+          if (!currentAssistant && evt.data?.text) {
+            currentAssistant = evt.data.text;
+            setMessages(prev => [...prev, { role: 'assistant', content: currentAssistant }]);
+          }
+        }
+
+        if (evt.event === 'error') {
+          setToolEvents(prev => [...prev, evt]);
         }
       }
     }
@@ -98,5 +103,11 @@ export function useChat() {
     setIsLoading(false);
   }
 
-  return { messages, toolEvents, isLoading, assistantText, sendMessage };
+  return {
+    messages,
+    toolEvents,
+    isLoading,
+    assistantText,
+    sendMessage,
+  };
 }

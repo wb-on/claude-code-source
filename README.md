@@ -59,6 +59,7 @@ node custom-webui/server.mjs --port=3760
 Then open `http://127.0.0.1:3760`.
 
 
+
 ## Agent Studio (Step 1 Architecture)
 
 A new architecture-first plan for a full local coding agent (Client-Server) is added at:
@@ -96,3 +97,4 @@ Open `http://localhost:5174` or `http://127.0.0.1:5174`.
 
 
 If frontend cannot reach backend, set `VITE_API_BASE_URL=http://127.0.0.1:8787` before `npm run dev`.
+Open `http://127.0.0.1:5174`.

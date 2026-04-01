@@ -17,23 +17,15 @@ export function getConfigPath() {
   return CONFIG_PATH;
 }
 
-export function ensureConfigFile() {
-  ensureDir();
-  if (!existsSync(CONFIG_PATH)) {
-    writeFileSync(CONFIG_PATH, JSON.stringify(defaultConfig(), null, 2), 'utf8');
-  }
-}
-
 export function loadConfig() {
-  ensureConfigFile();
+  ensureDir();
+  if (!existsSync(CONFIG_PATH)) return defaultConfig();
   try {
     const parsed = JSON.parse(readFileSync(CONFIG_PATH, 'utf8'));
     if (!Array.isArray(parsed.providers)) return defaultConfig();
     return parsed;
   } catch {
-    const fallback = defaultConfig();
-    saveConfig(fallback);
-    return fallback;
+    return defaultConfig();
   }
 }
 
