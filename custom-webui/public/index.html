@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Custom Model API WebUI</title>
+  <style>
+    body { font-family: sans-serif; max-width: 900px; margin: 24px auto; padding: 0 12px; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    input, select, textarea, button { padding: 8px; margin: 4px 0; width: 100%; box-sizing: border-box; }
+    button { cursor: pointer; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    pre { background: #f6f6f6; padding: 8px; border-radius: 6px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h2>AI 模型 API 管理（DeepSeek / MiniMax 等）</h2>
+
+  <div class="card">
+    <h3>快捷添加 API</h3>
+    <div class="row">
+      <div>
+        <label>Provider</label>
+        <select id="provider"></select>
+      </div>
+      <div>
+        <label>Base URL（可改）</label>
+        <input id="baseUrl" placeholder="https://..." />
+      </div>
+    </div>
+    <label>API Key</label>
+    <input id="apiKey" placeholder="sk-..." />
+    <label>模型列表（逗号分隔）</label>
+    <input id="models" placeholder="deepseek-chat,deepseek-reasoner" />
+    <button id="saveBtn">保存 / 更新</button>
+  </div>
+
+  <div class="card">
+    <h3>当前已配置 Provider</h3>
+    <div id="providers"></div>
+  </div>
+
+  <div class="card">
+    <h3>当前支持模型（来自你的配置）</h3>
+    <pre id="modelList"></pre>
+  </div>
+
+  <script>
+    const providerSel = document.getElementById('provider');
+    const baseUrlInput = document.getElementById('baseUrl');
+    const apiKeyInput = document.getElementById('apiKey');
+    const modelsInput = document.getElementById('models');
+    const providersDiv = document.getElementById('providers');
+    const modelListPre = document.getElementById('modelList');
+
+    let presets = {};
+
+    async function initProviders() {
+      presets = await (await fetch('/api/providers')).json();
+      providerSel.innerHTML = Object.entries(presets)
+        .map(([k, v]) => `<option value="${k}">${v.label} (${k})</option>`)
+        .join('');
+      providerSel.addEventListener('change', fillPreset);
+      fillPreset();
+    }
+
+    function fillPreset() {
+      const p = presets[providerSel.value] || {};
+      baseUrlInput.value = p.defaultBaseUrl || '';
+      modelsInput.value = (p.models || []).join(',');
+    }
+
+    async function refreshConfig() {
+      const cfg = await (await fetch('/api/config')).json();
+      providersDiv.innerHTML = (cfg.providers || []).map(p => `
+        <div class="card">
+          <b>${p.provider}</b><br/>
+          Base: ${p.baseUrl || '-'}<br/>
+          Models: ${(p.models || []).join(', ')}<br/>
+          Updated: ${p.updatedAt || '-'}<br/>
+          <button onclick="delProvider('${p.provider}')">删除</button>
+        </div>
+      `).join('') || '<i>暂无</i>';
+
+      const models = await (await fetch('/api/models')).json();
+      modelListPre.textContent = JSON.stringify(models, null, 2);
+    }
+
+    async function saveProvider() {
+      const body = {
+        provider: providerSel.value,
+        apiKey: apiKeyInput.value.trim(),
+        baseUrl: baseUrlInput.value.trim(),
+        models: modelsInput.value.split(',').map(v => v.trim()).filter(Boolean),
+      };
+      const r = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await r.json();
+      if (!r.ok) return alert(data.error || '保存失败');
+      apiKeyInput.value = '';
+      await refreshConfig();
+      alert('已保存');
+    }
+
+    async function delProvider(provider) {
+      await fetch('/api/config/' + encodeURIComponent(provider), { method: 'DELETE' });
+      await refreshConfig();
+    }
+
+    window.delProvider = delProvider;
+    document.getElementById('saveBtn').addEventListener('click', saveProvider);
+
+    (async function boot() {
+      await initProviders();
+      await refreshConfig();
+    })();
+  </script>
+</body>
+</html>
