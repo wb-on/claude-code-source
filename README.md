@@ -46,3 +46,14 @@ restored-src/src/
 - 源码版权归 [Anthropic](https://www.anthropic.com) 所有
 - 本仓库仅用于技术研究与学习，请勿用于商业用途
 - 如有侵权，请联系删除
+
+
+## Personal Custom WebUI
+
+If you want a personal WebUI to quickly add DeepSeek / MiniMax / other OpenAI-compatible APIs and view supported models:
+
+```bash
+node custom-webui/server.mjs --port=3760
+```
+
+Then open `http://127.0.0.1:3760`.
